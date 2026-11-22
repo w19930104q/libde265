@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/liiing/feedback/uid32405/build-tsan/cmake_install.cmake",
+		"/home/liiing/feedback/uid32405/build-tsan/libde265/cmake_install.cmake",
+		"/home/liiing/feedback/uid32405/build-tsan/libde265/x86/cmake_install.cmake",
+		"/home/liiing/feedback/uid32405/build-tsan/dec265/cmake_install.cmake",
+		"/home/liiing/feedback/uid32405/build-tsan/dev-tools/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
