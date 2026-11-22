@@ -1,0 +1,205 @@
+{
+  "comment": "Expected dec265 YUV output for the fixed sample matrix. Semantics: visible picture (conformance window applied), planar YUV, planes Y,Cb,Cr (mono: Y only); chroma dims per sub-sampling of the cropped luma size (ceil for odd); <=8bit: 1 byte/sample; 9..16bit: 2 bytes/sample little-endian, value right-aligned.",
+  "cases": [
+    {
+      "stream": "streams/c420_b08.h265",
+      "chroma": "420",
+      "bitdepth": 8,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "fd4dfe6c5b8238a4ff6ce60d444b24e04750eadfbdc385dcae613597c6886ad6",
+      "size": 27000
+    },
+    {
+      "stream": "streams/c420_b10.h265",
+      "chroma": "420",
+      "bitdepth": 10,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "11c2787937ba096685271eb7f56bcc03f74fdefadb9a9331fa27e9fa8b928658",
+      "size": 54000
+    },
+    {
+      "stream": "streams/c420_b12.h265",
+      "chroma": "420",
+      "bitdepth": 12,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "7176661df0c9662daaa1b115718db3a44fc94ad2493a2f3154c1fe8c6df3cc4f",
+      "size": 54000
+    },
+    {
+      "stream": "streams/c422_b08.h265",
+      "chroma": "422",
+      "bitdepth": 8,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "9609c5d1b979d8887e51d05a923053f40885e9625a4ca1b10dd0002aff6ac0f3",
+      "size": 36000
+    },
+    {
+      "stream": "streams/c422_b10.h265",
+      "chroma": "422",
+      "bitdepth": 10,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "0796a134df9eb31a6ddcec204d6fcd7acdbd3d7a1aec75cc5db19f39c4337caf",
+      "size": 72000
+    },
+    {
+      "stream": "streams/c422_b12.h265",
+      "chroma": "422",
+      "bitdepth": 12,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "0c2c3d2604eec3ff6fec570f0fedac8a7e7d59cd82cba0bc77a5e847d6c009e4",
+      "size": 72000
+    },
+    {
+      "stream": "streams/c444_b08.h265",
+      "chroma": "444",
+      "bitdepth": 8,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "1414bba7ee2a1ff7d5b4fb3719439fd8903f38512c495fd17afb523f9166cd6a",
+      "size": 54000
+    },
+    {
+      "stream": "streams/c444_b10.h265",
+      "chroma": "444",
+      "bitdepth": 10,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "a10b3b72b562397bb9aa1bff0a259a1afc364eeda93ea5befbf87716e1ab77b9",
+      "size": 108000
+    },
+    {
+      "stream": "streams/c444_b12.h265",
+      "chroma": "444",
+      "bitdepth": 12,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "5c1999adbe5d3f2040b0bfe95e5545d5ecc01d9d958bbb3ad8cfb541df709bb9",
+      "size": 108000
+    },
+    {
+      "stream": "streams/cmono_b08.h265",
+      "chroma": "mono",
+      "bitdepth": 8,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "eeb06640ceaaddb682d9f2d11320469b9c2f0856ecd4d29393499b0ecb3fa8c6",
+      "size": 18000
+    },
+    {
+      "stream": "streams/cmono_b10.h265",
+      "chroma": "mono",
+      "bitdepth": 10,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "b9ca8fe289f0ac64550d7efe9d4427965062714622980f2aae633169902a97e9",
+      "size": 36000
+    },
+    {
+      "stream": "streams/cmono_b12.h265",
+      "chroma": "mono",
+      "bitdepth": 12,
+      "luma_width": 100,
+      "luma_height": 60,
+      "frames": 3,
+      "sha256": "c7a4c1a3fe6d3ef49b2b7aa7415332a6a9ce25436bb1ea8abc3e8137f711c97e",
+      "size": 36000
+    },
+    {
+      "stream": "streams/p420_b08_odd.h265",
+      "chroma": "420",
+      "bitdepth": 8,
+      "luma_width": 102,
+      "luma_height": 62,
+      "frames": 3,
+      "sha256": "447e6377692c3f34690615c580ce5df9e308bd906676c4727c8717fc3826c48b",
+      "size": 28458
+    },
+    {
+      "stream": "streams/p420_b10_odd.h265",
+      "chroma": "420",
+      "bitdepth": 10,
+      "luma_width": 102,
+      "luma_height": 62,
+      "frames": 3,
+      "sha256": "4587c2e6fbf58d790faeff442fdecada850aab354db565e788032bb102744a25",
+      "size": 56916
+    },
+    {
+      "stream": "streams/p422_b08_odd.h265",
+      "chroma": "422",
+      "bitdepth": 8,
+      "luma_width": 102,
+      "luma_height": 61,
+      "frames": 3,
+      "sha256": "a2e980c0bbc3a28deb16dd1e4d3025c138f95284491911889a5671e6ba89b055",
+      "size": 37332
+    },
+    {
+      "stream": "streams/p444_b08_odd.h265",
+      "chroma": "444",
+      "bitdepth": 8,
+      "luma_width": 101,
+      "luma_height": 61,
+      "frames": 3,
+      "sha256": "16ea2eb90c542b47ee39642c9299b55bc537e256d5ee727a1a6c76fb2ab8e2cd",
+      "size": 55449
+    },
+    {
+      "stream": "streams/p444_b10_odd.h265",
+      "chroma": "444",
+      "bitdepth": 10,
+      "luma_width": 101,
+      "luma_height": 61,
+      "frames": 3,
+      "sha256": "cee893f7aff3f8237e30c04ff5eab913024d0a3ae2322dbc5a386bcbd52beae3",
+      "size": 110898
+    },
+    {
+      "stream": "streams/p444_b12_odd.h265",
+      "chroma": "444",
+      "bitdepth": 12,
+      "luma_width": 101,
+      "luma_height": 61,
+      "frames": 3,
+      "sha256": "ade0e2d8de21c39049bf51afa3ec0181aa5be46944acc3defc44e89be959dfb7",
+      "size": 110898
+    },
+    {
+      "stream": "streams/pmono_b08_odd.h265",
+      "chroma": "mono",
+      "bitdepth": 8,
+      "luma_width": 101,
+      "luma_height": 61,
+      "frames": 3,
+      "sha256": "88af54c2e2c5038382974819b0c00411053b6f082407fa0f29a0b339ff963b0e",
+      "size": 18483
+    },
+    {
+      "stream": "streams/pmono_b10_odd.h265",
+      "chroma": "mono",
+      "bitdepth": 10,
+      "luma_width": 101,
+      "luma_height": 61,
+      "frames": 3,
+      "sha256": "262ca22db803411cf03a634c5c65715f997cd8043d4cf34629ad6e308724ea6c",
+      "size": 36966
+    }
+  ]
+}

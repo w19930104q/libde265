@@ -310,8 +310,17 @@ de265_error de265_image::alloc_image(int w,int h, enum de265_chroma c,
 
   width_confwin = width - (left+right)*WinUnitX;
   height_confwin= height- (top+bottom)*WinUnitY;
-  chroma_width_confwin = chroma_width -left-right;
-  chroma_height_confwin= chroma_height-top-bottom;
+
+  if (chroma_format == de265_chroma_mono) {
+    // Monochrome pictures have no chroma planes. Their cropped size is zero,
+    // not a negative remainder of the conformance-window offsets.
+    chroma_width_confwin  = 0;
+    chroma_height_confwin = 0;
+  }
+  else {
+    chroma_width_confwin = chroma_width -left-right;
+    chroma_height_confwin= chroma_height-top-bottom;
+  }
 
   spec.crop_left  = left *WinUnitX;
   spec.crop_right = right*WinUnitX;

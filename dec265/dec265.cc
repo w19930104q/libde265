@@ -118,6 +118,65 @@ static struct option long_options[] = {
 
 
 
+/* YUV output format written by "dec265 -o" (public, documented semantics):
+
+   For every decoded picture, the visible picture (i.e. with the SPS
+   conformance window applied) is written as planar YUV, planes in the
+   order Y, Cb, Cr.  Monochrome pictures only have the Y plane.
+
+   The plane dimensions follow the cropped luma size W x H and the chroma
+   sub-sampling of the stream:
+
+     4:2:0   chroma planes are ceil(W/2) x ceil(H/2)
+     4:2:2   chroma planes are ceil(W/2) x H
+     4:4:4   chroma planes are W x H
+     mono    no chroma planes
+
+   Each plane is written row by row, top to bottom, left to right, without
+   any padding (the internal row stride is not written out).
+
+   Samples with a bit depth of up to 8 bits are written as one byte per
+   sample.  Samples with a bit depth of 9 to 16 bits are written as two
+   bytes per sample, little-endian, with the sample value right-aligned
+   in the 16-bit word (the same packing as FFmpeg's yuv420p10le /
+   yuv420p12le rawvideo formats).
+*/
+
+// Check that the plane geometry reported by the library is consistent with
+// the chroma sub-sampling of the cropped picture.  If this fails, the YUV
+// file layout (plane sizes) would not match what readers expect from the
+// stream parameters, so we refuse to write it.
+static bool check_plane_geometry(const de265_image* img)
+{
+  de265_chroma chroma = de265_get_chroma_format(img);
+
+  int lw = de265_get_image_width(img,0);
+  int lh = de265_get_image_height(img,0);
+
+  if (lw<=0 || lh<=0) return false;
+
+  if (chroma == de265_chroma_mono) {
+    return de265_get_image_width(img,1)==0 && de265_get_image_height(img,1)==0 &&
+           de265_get_image_width(img,2)==0 && de265_get_image_height(img,2)==0;
+  }
+
+  int expect_cw=0, expect_ch=0;
+  switch (chroma) {
+  case de265_chroma_420: expect_cw=(lw+1)/2; expect_ch=(lh+1)/2; break;
+  case de265_chroma_422: expect_cw=(lw+1)/2; expect_ch=lh;       break;
+  case de265_chroma_444: expect_cw=lw;       expect_ch=lh;       break;
+  default: return false;
+  }
+
+  for (int c=1;c<=2;c++) {
+    if (de265_get_image_width(img,c)  != expect_cw) return false;
+    if (de265_get_image_height(img,c) != expect_ch) return false;
+  }
+
+  return true;
+}
+
+
 static void write_picture(const de265_image* img)
 {
   static FILE* fh = NULL;
@@ -129,29 +188,44 @@ static void write_picture(const de265_image* img)
     }
   }
 
-  for (int c=0;c<3;c++) {
+  if (!check_plane_geometry(img)) {
+    fprintf(stderr,"internal error: image plane sizes are inconsistent with "
+            "the chroma format of the cropped picture; not writing YUV output\n");
+    exit(1);
+  }
+
+  // Monochrome pictures have a single plane; all other chroma formats have three.
+  int nPlanes = (de265_get_chroma_format(img) == de265_chroma_mono) ? 1 : 3;
+
+  for (int c=0;c<nPlanes;c++) {
     int stride;
     const uint8_t* p = de265_get_image_plane(img, c, &stride);
 
-    int width = de265_get_image_width(img,c);
+    int width  = de265_get_image_width(img,c);
+    int height = de265_get_image_height(img,c);
+    int bits   = de265_get_bits_per_pixel(img,c);
 
-    if (de265_get_bits_per_pixel(img,c)<=8) {
+    if (p==NULL || width<=0 || height<=0) {
+      continue;
+    }
+
+    if (bits<=8) {
       // --- save 8 bit YUV ---
 
-      for (int y=0;y<de265_get_image_height(img,c);y++) {
+      for (int y=0;y<height;y++) {
         fwrite(p + y*stride, width, 1, fh);
       }
     }
     else {
-      // --- save 16 bit YUV ---
+      // --- save 9-16 bit YUV as 16-bit little-endian words ---
 
-      int bpp = (de265_get_bits_per_pixel(img,c)+7)/8;
+      int bpp = (bits+7)/8;
       int pixelsPerLine = stride/bpp;
 
       uint8_t* buf = new uint8_t[width*2];
-      uint16_t* p16 = (uint16_t*)p;
+      const uint16_t* p16 = (const uint16_t*)p;
 
-      for (int y=0;y<de265_get_image_height(img,c);y++) {
+      for (int y=0;y<height;y++) {
         for (int x=0;x<width;x++) {
           uint16_t pixel_value = (p16+y*pixelsPerLine)[x];
           buf[2*x+0] = pixel_value & 0xFF;
@@ -651,7 +725,8 @@ int main(int argc, char** argv)
     fprintf(stderr,"  -c, --check-hash  perform hash check\n");
     fprintf(stderr,"  -n, --nal         input is a stream with 4-byte length prefixed NAL units\n");
     fprintf(stderr,"  -f, --frames N    set number of frames to process\n");
-    fprintf(stderr,"  -o, --output      write YUV reconstruction\n");
+    fprintf(stderr,"  -o, --output      write YUV reconstruction (planar YUV, cropped to the\n");
+    fprintf(stderr,"                    conformance window; >8bit as 16-bit little-endian)\n");
     fprintf(stderr,"  -d, --dump        dump headers\n");
 #if HAVE_VIDEOGFX && HAVE_SDL
     fprintf(stderr,"  -V, --videogfx    output with videogfx instead of SDL\n");

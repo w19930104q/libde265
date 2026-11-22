@@ -263,6 +263,11 @@ if (WITH_FUZZERS)
   add_subdirectory (fuzzing)
 endif()
 
+include(CTest)
+if (BUILD_TESTING AND ENABLE_DECODER)
+  add_subdirectory (tests)
+endif()
+
 add_custom_target(dist
   COMMAND git archive --format=tar.gz --worktree-attributes
     --prefix=${PROJECT_NAME}-${PROJECT_VERSION}/
