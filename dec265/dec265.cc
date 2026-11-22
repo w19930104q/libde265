@@ -91,6 +91,7 @@ int highestTID = 100;
 int verbosity=0;
 int disable_deblocking=0;
 int disable_sao=0;
+de265_error_concealment error_concealment = DE265_CONCEALMENT_OFF;
 
 static struct option long_options[] = {
   {"quiet",      no_argument,       0, 'q' },
@@ -111,6 +112,7 @@ static struct option long_options[] = {
   {"errmap",      no_argument,       0, 'e' },
   {"highest-TID", required_argument, 0, 'T' },
   {"verbose",    no_argument,       0, 'v' },
+  {"error-conceal", required_argument, 0, 'E' },
   {"disable-deblocking", no_argument, &disable_deblocking, 1 },
   {"disable-sao",        no_argument, &disable_sao, 1 },
   {0,         0,                 0,  0 }
@@ -610,7 +612,7 @@ int main(int argc, char** argv)
   while (1) {
     int option_index = 0;
 
-    int c = getopt_long(argc, argv, "qt:chf:o:dLB:n0vT:m:se"
+    int c = getopt_long(argc, argv, "qt:chf:o:dLB:n0vT:m:seE:"
 #if HAVE_VIDEOGFX && HAVE_SDL
                         "V"
 #endif
@@ -636,6 +638,19 @@ int main(int argc, char** argv)
     case 'e': show_psnr_map=true; break;
     case 'T': highestTID = parse_param(optarg, 0, std::nullopt, "-T"); break;
     case 'v': verbosity++; break;
+    case 'E':
+      if (strcmp(optarg, "off") == 0) {
+        error_concealment = DE265_CONCEALMENT_OFF;
+      }
+      else if (strcmp(optarg, "copy-previous") == 0) {
+        error_concealment = DE265_CONCEALMENT_COPY_PREVIOUS_FRAME;
+      }
+      else {
+        std::cerr << "invalid argument to -E/--error-conceal: "
+                  << optarg << " (expected 'off' or 'copy-previous')\n";
+        exit(5);
+      }
+      break;
     }
   }
 
@@ -666,6 +681,8 @@ int main(int argc, char** argv)
     fprintf(stderr,"  -e, --errmap      show error-map (only when -m active)\n");
 #endif
     fprintf(stderr,"  -T, --highest-TID select highest temporal sublayer to decode\n");
+    fprintf(stderr,"  -E, --error-conceal POLICY  error concealment for damaged pictures:\n");
+    fprintf(stderr,"                                'off' (default), 'copy-previous' (repeat last good frame)\n");
     fprintf(stderr,"      --disable-deblocking   disable deblocking filter\n");
     fprintf(stderr,"      --disable-sao          disable sample-adaptive offset filter\n");
     fprintf(stderr,"  -h, --help        show help\n");
@@ -683,6 +700,13 @@ int main(int argc, char** argv)
 
   de265_set_parameter_bool(ctx, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, disable_deblocking);
   de265_set_parameter_bool(ctx, DE265_DECODER_PARAM_DISABLE_SAO, disable_sao);
+
+  de265_error conceal_err = de265_set_error_concealment(ctx, error_concealment);
+  if (conceal_err != DE265_OK) {
+    fprintf(stderr, "failed to set error concealment policy: %s\n",
+            de265_get_error_text(conceal_err));
+    exit(5);
+  }
 
   if (dump_headers) {
     de265_set_parameter_int(ctx, DE265_DECODER_PARAM_DUMP_SPS_HEADERS, 1);

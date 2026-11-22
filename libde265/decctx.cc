@@ -233,6 +233,11 @@ void decoder_context::reset()
   // The error showed while scrubbing the ToS video in VLC.
   dpb.clear();
 
+  // Drop the concealment source too: after a reset the stream may start with
+  // different geometry and a concealed picture must never borrow pixels from
+  // the pre-reset stream.
+  error_concealment_.clear();
+
   nal_parser.remove_pending_input_data();
 
 
@@ -669,6 +674,29 @@ de265_error decoder_context::decode_some(bool* did_work)
     *did_work=true;
 
 
+    // --- output-side error concealment ---
+    // Runs before the post-filters and before the picture enters the output
+    // queue / reference bookkeeping. All slice tasks of this picture have
+    // completed (or been marked as completed) at this point, and the worker
+    // threads are idle with respect to this image, so replacing the pixel
+    // planes cannot race with any decoder task.
+
+    bool concealed = false;
+    if (imgunit->img->integrity.load(std::memory_order_acquire) != INTEGRITY_CORRECT) {
+      concealed = error_concealment_.apply(this, imgunit->img);
+      if (concealed) {
+        // The concealed pixels are a copy of a previous picture and must not
+        // be used as a reference: otherwise later pictures would be predicted
+        // from content that never existed at this POC and the damage would
+        // propagate. Marking the picture unused makes subsequent pictures use
+        // the normal unavailable-reference (gray) fallback until the next
+        // IRAP, which is exactly what a stream with this damaged picture
+        // removed would produce.
+        imgunit->img->PicState = UnusedForReference;
+      }
+    }
+
+
     // mark all CTBs as decoded even if they are not, because faulty input
     // streams could miss part of the picture
     // TODO: this will not work when slice decoding is parallel to post-filtering,
@@ -679,12 +707,18 @@ de265_error decoder_context::decode_some(bool* did_work)
 
 
 
-    // run post-processing filters (deblocking & SAO)
+    // run post-processing filters (deblocking & SAO). A concealed picture is
+    // pixel-complete already and its borrowed pixels were filtered when the
+    // source picture was decoded, so running the filters again would both
+    // waste work and alter the output away from the documented
+    // "identical to the previous frame" guarantee.
 
-    if (img->decctx->num_worker_threads)
-      run_postprocessing_filters_parallel(imgunit);
-    else
-      run_postprocessing_filters_sequential(imgunit->img);
+    if (!concealed) {
+      if (img->decctx->num_worker_threads)
+        run_postprocessing_filters_parallel(imgunit);
+      else
+        run_postprocessing_filters_sequential(imgunit->img);
+    }
 
     // process suffix SEIs
 
@@ -997,6 +1031,13 @@ de265_error decoder_context::decode_slice_unit_WPP(image_unit* imgunit,
     if (dataStartIndex<0 || dataEnd>sliceunit->reader.bytes_remaining ||
         dataEnd <= dataStartIndex) {
       //printf("WPP premature end\n");
+      // The slice data ends before all WPP entry-point sub-streams could be
+      // dispatched (typical packet-loss truncation). The row tasks that were
+      // already queued cannot detect this by themselves: CABAC reads past the
+      // buffer end simply return zero bits, so the picture would otherwise be
+      // completed with integrity INTEGRITY_CORRECT and error concealment would
+      // never run. Record the failure here, before wait_for_completion().
+      img->integrity = INTEGRITY_DECODING_ERRORS;
       err = DE265_ERROR_PREMATURE_END_OF_SLICE;
       break;
     }
@@ -1935,11 +1976,21 @@ de265_error decoder_context::push_picture_to_output_queue(image_unit* imgunit)
   if (outimg->PicOutputFlag) {
     loginfo(LogDPB,"new picture has output-flag=true\n");
 
-    if (outimg->integrity != INTEGRITY_CORRECT &&
+    if (outimg->integrity.load(std::memory_order_acquire) != INTEGRITY_CORRECT &&
         param_suppress_faulty_pictures) {
+      // Faulty and suppression requested: do not output and do not use it as
+      // a concealment source.
     }
     else {
       dpb.insert_image_into_reorder_buffer(outimg);
+
+      // Only pictures that actually leave the decoder error-free become the
+      // concealment source. A concealed picture is INTEGRITY_CORRECT here and
+      // is cached too: successive damaged pictures all freeze on the same
+      // last good content, which is the intended freeze-picture behavior.
+      if (outimg->integrity.load(std::memory_order_acquire) == INTEGRITY_CORRECT) {
+        error_concealment_.remember_correct_picture(this, outimg);
+      }
     }
 
     loginfo(LogDPB,"push image %d into reordering queue\n", outimg->PicOrderCntVal);

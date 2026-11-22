@@ -34,6 +34,7 @@
 #include "libde265/threads.h"
 #include "libde265/acceleration.h"
 #include "libde265/nal-parser.h"
+#include "libde265/error-concealment.h"
 
 #include <array>
 #include <memory>
@@ -359,6 +360,23 @@ class decoder_context : public base_context {
   bool param_sei_check_hash = false;
   bool param_conceal_stream_errors = true;
   bool param_suppress_faulty_pictures = false;
+
+  // Output-side error concealment (previous-frame copy etc.). Owns an
+  // internal copy of the last correct output picture and an atomic policy
+  // switch; see error-concealment.h.
+  error_concealment error_concealment_;
+
+  de265_error set_error_concealment(de265_error_concealment policy) {
+    if (policy != DE265_CONCEALMENT_OFF &&
+        policy != DE265_CONCEALMENT_COPY_PREVIOUS_FRAME) {
+      return DE265_ERROR_INVALID_ARGUMENT;
+    }
+    error_concealment_.set_policy(policy);
+    return DE265_OK;
+  }
+  de265_error_concealment get_error_concealment() const {
+    return error_concealment_.get_policy();
+  }
 
   int  param_sps_headers_fd = -1;
   int  param_vps_headers_fd = -1;

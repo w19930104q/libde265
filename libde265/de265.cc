@@ -508,6 +508,21 @@ LIBDE265_API int  de265_change_framerate(de265_decoder_context* de265ctx,int mor
 }
 
 
+LIBDE265_API de265_error de265_set_error_concealment(de265_decoder_context* de265ctx,
+                                                     enum de265_error_concealment policy)
+{
+  decoder_context* ctx = reinterpret_cast<decoder_context*>(de265ctx);
+  return ctx->set_error_concealment(policy);
+}
+
+
+LIBDE265_API enum de265_error_concealment de265_get_error_concealment(de265_decoder_context* de265ctx)
+{
+  decoder_context* ctx = reinterpret_cast<decoder_context*>(de265ctx);
+  return ctx->get_error_concealment();
+}
+
+
 LIBDE265_API de265_error de265_get_warning(de265_decoder_context* de265ctx)
 {
   decoder_context* ctx = reinterpret_cast<decoder_context*>(de265ctx);

@@ -419,6 +419,62 @@ LIBDE265_API void de265_set_framerate_ratio(de265_decoder_context*,int percent);
 LIBDE265_API int  de265_change_framerate(de265_decoder_context*,int more_vs_less); // 1: more, -1: less, returns corresponding framerate_ratio
 
 
+/* --- error concealment ---
+
+   Error concealment decides what the decoder outputs for a picture whose
+   bitstream data was damaged in transit (truncated NAL units, invalid slice
+   data, missing reference pictures, ...). Without concealment such pictures
+   are still output, but contain whatever partial/gray content the normal
+   decoding path produced, and their damage can propagate to every picture
+   that uses them as a reference.
+
+   DE265_CONCEALMENT_OFF (default):
+     No output-side concealment. The decoder behaves exactly as it did before
+     this API existed: damaged pictures are decoded as far as possible and
+     output as-is (or suppressed when DE265_DECODER_PARAM_SUPPRESS_FAULTY_
+     PICTURES is enabled).
+
+   DE265_CONCEALMENT_COPY_PREVIOUS_FRAME:
+     When a picture finishes with any decoding error, its whole output is
+     replaced by a copy of the most recent correctly decoded output picture
+     ("freeze-picture" / previous-frame concealment). The concealed picture
+     is marked as not usable for inter prediction, so its (borrowed) pixels
+     never corrupt the reference pictures of later pictures; later pictures
+     fall back to the normal unavailable-reference handling until the next
+     intra random access point (IRAP), from which point decoding is identical
+     to a stream with the damaged picture removed.
+     If no correctly decoded picture is available yet (e.g. the first picture
+     of the stream is damaged), concealment cannot be applied and the picture
+     is output as in the OFF policy. The concealment source is kept in an
+     internal, decoder-owned buffer and is independent of the lifetime of
+     pictures handed out through the output queue.
+
+   Thread-safety:
+     de265_set_error_concealment() stores the policy in an atomic variable;
+     it is safe to call it while internal worker threads (started with
+     de265_start_worker_threads()) are decoding the current picture. The new
+     policy takes effect for the next picture that finishes decoding, i.e.
+     switching is immediate at picture boundaries. Like every other call that
+     takes a de265_decoder_context, concurrent calls from multiple owner
+     threads on the same context are still not allowed - see the threading
+     note above.
+*/
+typedef enum de265_error_concealment {
+  DE265_CONCEALMENT_OFF = 0,
+  DE265_CONCEALMENT_COPY_PREVIOUS_FRAME = 1
+} de265_error_concealment;
+
+/* Set the error concealment strategy of this decoder (see the error
+   concealment section above). Unknown values are rejected and the current
+   policy is left unchanged. Returns DE265_OK on success or
+   DE265_ERROR_INVALID_ARGUMENT for an unsupported policy value. */
+LIBDE265_API de265_error de265_set_error_concealment(de265_decoder_context*,
+                                                     de265_error_concealment);
+
+/* Query the currently configured error concealment strategy. */
+LIBDE265_API de265_error_concealment de265_get_error_concealment(de265_decoder_context*);
+
+
 /* --- decoding parameters --- */
 
 typedef enum de265_param {

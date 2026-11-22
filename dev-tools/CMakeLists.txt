@@ -6,6 +6,7 @@ set(tool_targets
   tests
   bjoentegaard
   mt-decode-test
+  error-concealment-test
 )
 
 set(gen-enc-table_SOURCES gen-entropy-table.cc)
@@ -15,6 +16,7 @@ set(block-rate-estim_SOURCES block-rate-estim.cc)
 set(tests_SOURCES tests.cc test-add-residual.cc test-intrapred.cc test-transform.cc test-dequant.cc test-deblk.cc test-cabac.cc)
 set(bjoentegaard_SOURCES bjoentegaard.cc)
 set(mt-decode-test_SOURCES mt-decode-test.cc)
+set(error-concealment-test_SOURCES error-concealment-test.cc)
 
 foreach(tool ${tool_targets})
   add_executable(${tool} ${${tool}_SOURCES})
